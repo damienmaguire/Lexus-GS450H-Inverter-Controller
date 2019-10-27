@@ -18,4 +18,9 @@ Copyright 2019 D.Maguire and T.Darby
 <br>
 <br>
 29/09/19 : Initial commit.PCB design in progress. 
+<br>
+<br>
+27/10/19 : First successful test of the prototype running on the bench : https://youtu.be/F5XM6blwMlw
+<br>
+
 
