@@ -22,5 +22,5 @@ Copyright 2019 D.Maguire and T.Darby
 <br>
 27/10/19 : First successful test of the prototype running on the bench : https://youtu.be/F5XM6blwMlw
 <br>
-
+24/11/19 : Uploaded V3 software with reverse function. When IN1 is low motors run forward. when IN1 is pulled to +12v MG2 reverses.
 
