@@ -26,3 +26,9 @@ Copyright 2019 D.Maguire and T.Darby
 
 21/01/2020 : Due to popular demand and a return to a no risk no reward culture, I have released the V2 design including the JLCPCB files so you can all take an arrow in back for me if I screwed up the design. In case anyone for some weird reason would like to support me why not buy a board from the EVBMW webshop : https://www.evbmw.com/index.php/evbmw-webshop
 
+17/02/20 : WiFi interface files uploaded. Designed to run on the Olimex ESP8266 WiFi Module : <br>
+https://www.olimex.com/Products/IoT/ESP8266/MOD-WIFI-ESP8266/open-source-hardware
+<br>
+
+
+
