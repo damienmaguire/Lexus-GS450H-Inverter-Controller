@@ -1,0 +1,522 @@
+<!DOCTYPE HTML><html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="highcharts.js"></script>
+  <script src="highcharts-more.js"></script>
+  <script src="solid-gauge.js"></script>
+  <style>
+  
+  
+  .highcharts-figure .chart-container {
+	width: 300px;
+	height: 200px;
+	float: left;
+}
+
+.highcharts-figure, .highcharts-data-table table {
+	width: 1200px;
+	margin: 0 auto;
+}
+
+.highcharts-data-table table {
+    font-family: Verdana, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid #EBEBEB;
+    margin: 10px auto;
+    text-align: center;
+    width: 100%;
+    max-width: 500px;
+}
+.highcharts-data-table caption {
+    padding: 1em 0;
+    font-size: 1.2em;
+    color: #555;
+}
+.highcharts-data-table th {
+	font-weight: 600;
+    padding: 0.5em;
+}
+.highcharts-data-table td, .highcharts-data-table th, .highcharts-data-table caption {
+    padding: 0.5em;
+}
+.highcharts-data-table thead tr, .highcharts-data-table tr:nth-child(even) {
+    background: #f8f8f8;
+}
+.highcharts-data-table tr:hover {
+    background: #f1f7ff;
+}
+
+@media (max-width: 600px) {
+	.highcharts-figure, .highcharts-data-table table {
+		width: 100%;
+	}
+	.highcharts-figure .chart-container {
+		width: 300px;
+		float: none;
+		margin: 0 auto;
+	}
+
+}
+  
+  
+  
+  
+ 
+  </style>
+</head>
+<body>
+  <h2></h2>
+  <figure class="highcharts-figure">
+  <div align="center"><h1><span id="heading1"></span></h1></div>
+  <div id="container-PackVoltage" class="chart-container"></div>
+  <div id="container-Current" class="chart-container"></div>
+  <div id="container-Power" class="chart-container"></div>
+  <div id="container-mg1RPM" class="chart-container"></div>
+  <div id="container-mg2RPM" class="chart-container"></div>
+  <div id="container-mg1Temp" class="chart-container"></div>
+  <div id="container-mg2Temp" class="chart-container"></div>
+  <div id="container-oilPressure" class="chart-container"></div>
+  </figure>
+</body>
+
+
+<script>
+setInterval(function ( ) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (PackVoltage) {
+			point = PackVoltage.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/PackVoltage", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (Current) {
+			point = Current.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/Current", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (Power) {
+			point = Power.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/Power", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (mg1RPM) {
+			point = mg1RPM.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/mg1RPM", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (mg2RPM) {
+			point = mg2RPM.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/mg2RPM", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (mg1Temp) {
+			point = mg1Temp.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/mg1Temp", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (mg2Temp) {
+			point = mg2Temp.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/mg2Temp", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	    var point,
+        newVal,
+        inc;
+		if (oilPressure) {
+			point = oilPressure.series[0].points[0];
+			inc = parseFloat(this.responseText);
+			newVal =  inc;
+			point.update(newVal);
+		} 
+    }
+  };
+  xhttp.open("GET", "/oilPressure", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+     if (this.readyState == 4 && this.status == 200) {	
+		document.body.style.backgroundColor = (this.responseText);
+    }
+  };
+  xhttp.open("GET", "/getBGcolor", true);
+  xhttp.send();
+  
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+	  document.getElementById("heading1").innerHTML = this.responseText; //print to the web ui
+    }
+  };
+  xhttp.open("GET", "getHeading", true);	//action url of server
+  xhttp.send();
+}, 1000 ) ;
+
+var gaugeOptions = {
+    chart: {
+        type: 'solidgauge',
+		backgroundColor: 'rgba(0,0,0,0)'
+    },
+    title: null,
+    pane: {
+        center: ['50%', '85%'],
+        size: '140%',
+        startAngle: -90,
+        endAngle: 90,
+        background: {
+            backgroundColor:
+                Highcharts.defaultOptions.legend.backgroundColor || '#EEE',
+            innerRadius: '60%',
+            outerRadius: '100%',
+            shape: 'arc'
+        }
+    },
+    exporting: {
+        enabled: false
+    },
+    tooltip: {
+        enabled: false
+    },
+    // the value axis
+    yAxis: {
+        stops: [
+            [0.1, '#55BF3B'], // green
+            [0.5, '#DDDF0D'], // yellow
+            [0.9, '#DF5353']  // red
+        ],
+        lineWidth: 0,
+        tickWidth: 0,
+        minorTickInterval: null,
+        tickAmount: 2,
+        title: {
+            y: -70
+        },
+        labels: {
+            y: 16
+        }
+    },
+    plotOptions: {
+        solidgauge: {
+            dataLabels: {
+                y: 5,
+                borderWidth: 0,
+                useHTML: true
+            }
+        }
+    }
+};
+
+//Pack Voltage
+var PackVoltage = Highcharts.chart('container-PackVoltage', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: 0,
+        max: 700,
+        title: {
+            text: 'Pack Voltage'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'Pack Voltage',
+        data: [630],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">Volts</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' Volts'
+        }
+    }]
+}));
+
+//Current
+var Current = Highcharts.chart('container-Current', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: 0,
+        max: 1000,
+        title: {
+            text: 'Current'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'Current',
+        data: [900],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">Amps</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' Amps'
+        }
+    }]
+}));
+
+//Power
+var Power = Highcharts.chart('container-Power', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: 0,
+        max: 300,
+        title: {
+            text: 'Power'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'Power',
+        data: [270],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">kw</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' kw'
+        }
+    }]
+}));
+
+//MG1 RPM
+var mg1RPM = Highcharts.chart('container-mg1RPM', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: 0,
+        max: 10000,
+        title: {
+            text: 'MG1 RPM'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'MG1 RPM',
+        data: [9000],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">RPM</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' RPM'
+        }
+    }]
+}));
+
+//MG2 RPM
+var mg2RPM = Highcharts.chart('container-mg2RPM', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: 0,
+        max: 10000,
+        title: {
+            text: 'MG2 RPM'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'MG2 RPM',
+        data: [9000],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">RPM</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' RPM'
+        }
+    }]
+}));
+
+//MG1 Temperature
+var mg1Temp = Highcharts.chart('container-mg1Temp', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: -20,
+        max: 120,
+        title: {
+            text: 'MG1 Temperature'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'MG1 Temperature',
+        data: [100],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">&#8451</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' &#8451'
+        }
+    }]
+}));
+
+//MG2 Temperature
+var mg2Temp = Highcharts.chart('container-mg2Temp', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: -20,
+        max: 120,
+        title: {
+            text: 'MG2 Temperature'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'MG2 Temperature',
+        data: [100],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">&#8451</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' &#8451'
+        }
+    }]
+}));
+
+//Oil Pressure
+var oilPressure = Highcharts.chart('container-oilPressure', Highcharts.merge(gaugeOptions, {
+    yAxis: {
+        min: 0,
+        max: 100,
+        title: {
+            text: 'Oil Pressure'
+        }
+    },
+    credits: {
+        enabled: false
+    },
+    series: [{
+        name: 'Oil Pressure',
+        data: [90],
+        dataLabels: {
+            format:
+                '<div style="text-align:center">' +
+                '<span style="font-size:25px">{y}</span><br/>' +
+                '<span style="font-size:12px;opacity:0.4">%;</span>' +
+                '</div>'
+        },
+        tooltip: {
+            valueSuffix: ' %'
+        }
+    }]
+}));
+
+window.onload = function() {
+
+};
+</script>
+</html>
