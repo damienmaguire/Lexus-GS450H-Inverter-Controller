@@ -159,7 +159,7 @@ void setup() {
     can_status=false;
     RPM=750;
     Gcount=0x0d;
-    gear==NEUTRAL;
+    gear=NEUTRAL;
     shiftPos=0xb4; //select neutral
 //////////////////////////////////////////////   
   pinMode(pin_inv_req, OUTPUT);
