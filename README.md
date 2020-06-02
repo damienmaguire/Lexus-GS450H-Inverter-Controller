@@ -29,6 +29,9 @@ Copyright 2019 D.Maguire and T.Darby
 17/02/20 : WiFi interface files uploaded. Designed to run on the Olimex ESP8266 WiFi Module : <br>
 https://www.olimex.com/Products/IoT/ESP8266/MOD-WIFI-ESP8266/open-source-hardware
 <br>
-
+<br>
+02/06/20 : It works : https://www.youtube.com/watch?v=9eRWR5xXItc
+<br>
+<br>
 
 
