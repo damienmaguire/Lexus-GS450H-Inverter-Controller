@@ -139,12 +139,12 @@ short get_torque()
   MaxRegenTorque=parameters.Max_Drive_Torque/8; // regen up to 12.5% forward torque (1/8) at min throttle position
   //if (ThrotVal<parameters.Min_throttleVal+10) ThrotVal=parameters.Min_throttleVal;//dead zone at start of throttle travel
  if(gear==DRIVE) {
-  if(mg2_speed>100||mg2_speed<-100){ //we're above our min speed to start regen
-    if(ThrotVal<RegenRange) { //we're asking to regenerate
+  if(mg2_speed > 100){ //we're above our min speed to start regen
+    if(ThrotVal < RegenRange) { //we're asking to regenerate
       ThrotVal = map(ThrotVal, parameters.Min_throttleVal, RegenRange, -MaxRegenTorque, 0); //map from max regen torque to 0 within regen range
       ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
     }
-    else if(ThrotVal>AccelMinRange){ //we're asking for forward torque
+    else if(ThrotVal > AccelMinRange){ //we're asking for forward torque
       ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, parameters.Max_Drive_Torque); //map from 0 torque to max torque within forward torque range
     }
     else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
@@ -155,12 +155,12 @@ short get_torque()
  }
  if(gear==REVERSE) {
   //ThrotVal = map(ThrotVal, parameters.Min_throttleVal, parameters.Max_throttleVal, 0, -parameters.Max_Reverse_Torque);
-  if(mg2_speed>100||mg2_speed<-100){ //we're above our min speed to start regen
-    if(ThrotVal<RegenRange) { //we're asking to regenerate
+  if(mg2_speed < -100){ //we're above our min speed to start regen
+    if(ThrotVal < RegenRange) { //we're asking to regenerate
       ThrotVal = map(ThrotVal, parameters.Min_throttleVal, RegenRange, MaxRegenTorque, 0); //map from max regen torque to 0 within regen range
       ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
     }
-    else if(ThrotVal>AccelMinRange){ //we're asking for forward torque
+    else if(ThrotVal > AccelMinRange){ //we're asking for forward torque
       ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, -parameters.Max_Drive_Torque); //map from 0 torque to max torque within forward torque range
     }
     else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
