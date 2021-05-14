@@ -135,7 +135,8 @@ short get_torque()
   ThrotVal = analogRead(Throt1Pin);
   ThrotRange = parameters.Max_throttleVal - parameters.Min_throttleVal; //full range of min-max throttle
   //RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); // regen for first 20% of pedal travel
-  RegenRange = parameters.Min_throttleVal + map(abs(mg2_speed), 0, 1000, 0, (ThrotRange / 5)); // regen for first 0-20% of pedal travel, depending on speed
+  if(abs(mg2_speed) < 1000) RegenRange = parameters.Min_throttleVal + map(abs(mg2_speed), 0, 1000, 0, (ThrotRange / 5)); // regen for first 0-20% of pedal travel, depending on speed, if under 1000rpm
+  else RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); //fixed regen, 20% of pedal travel, 1000rpm or above
   AccelMinRange = RegenRange + (ThrotRange/20); // throttle begins at 5-25% pedal travel (5% dead zone) based on MG2 speed derived RegenRange
   MaxRegenTorque = parameters.Max_Drive_Torque / 8; // regen up to 12.5% forward torque (1/8) at min throttle position
   //if (ThrotVal<parameters.Min_throttleVal+10) ThrotVal=parameters.Min_throttleVal;//dead zone at start of throttle travel
@@ -143,7 +144,7 @@ short get_torque()
   if(mg2_speed > 100){ //we're above our min speed to start regen
     if(ThrotVal < RegenRange) { //we're asking to regenerate
       ThrotVal = map(ThrotVal, parameters.Min_throttleVal, RegenRange, -MaxRegenTorque, 0); //map from max regen torque to 0 within regen range
-      ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
+      if(mg2_speed < 1000) ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
     }
     else if(ThrotVal > AccelMinRange){ //we're asking for forward torque
       ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, parameters.Max_Drive_Torque); //map from 0 torque to max torque within forward torque range
@@ -151,7 +152,7 @@ short get_torque()
     else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
   }
   else { //we're below our min regen speed, zero torque for first ~5% of pedal
-    if (ThrotVal < AccelMinRange) ThrotVal = AccelMinRange; // if we're in the dead zone, don't request any torque
+    if (ThrotVal < AccelMinRange) ThrotVal = 0; // if we're in the dead zone, don't request any torque
     ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, parameters.Max_Drive_Torque);
   }
  }
@@ -160,7 +161,7 @@ short get_torque()
   if(mg2_speed < -100){ //we're above our min speed to start regen
     if(ThrotVal < RegenRange) { //we're asking to regenerate
       ThrotVal = map(ThrotVal, parameters.Min_throttleVal, RegenRange, MaxRegenTorque, 0); //map from max regen torque to 0 within regen range
-      ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
+      if(mg2_speed > -1000) ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
     }
     else if(ThrotVal > AccelMinRange){ //we're asking for forward torque
       ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, -parameters.Max_Drive_Torque); //map from 0 torque to max torque within forward torque range
@@ -168,7 +169,7 @@ short get_torque()
     else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
   }
   else {//we're below our min regen speed, zero torque for first ~5% of pedal
-    if (ThrotVal < AccelMinRange) ThrotVal = AccelMinRange; // if we're in the dead zone, don't request any torque
+    if (ThrotVal < AccelMinRange) ThrotVal = 0; // if we're in the dead zone, don't request any torque
     ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, -parameters.Max_Drive_Torque);
   }
  }
