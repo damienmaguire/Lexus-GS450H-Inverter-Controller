@@ -132,11 +132,11 @@ ControlParams parameters;
 short get_torque()
 {
   //accelerator pedal mapping to torque values here
-  ThrotVal=analogRead(Throt1Pin);
-  ThrotRange=parameters.Max_throttleVal-parameters.Min_throttleVal; //full range of min-max throttle
-  RegenRange=parameters.Min_throttleVal+(ThrotRange/5); // regen for first 20% of pedal travel
-  AccelMinRange=RegenRange+(ThrotRange/10); // throttle begins at 30% pedal travel
-  MaxRegenTorque=parameters.Max_Drive_Torque/8; // regen up to 12.5% forward torque (1/8) at min throttle position
+  ThrotVal = analogRead(Throt1Pin);
+  ThrotRange = parameters.Max_throttleVal - parameters.Min_throttleVal; //full range of min-max throttle
+  RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); // regen for first 20% of pedal travel
+  AccelMinRange = RegenRange + (ThrotRange/10); // throttle begins at 30% pedal travel
+  MaxRegenTorque = parameters.Max_Drive_Torque / 8; // regen up to 12.5% forward torque (1/8) at min throttle position
   //if (ThrotVal<parameters.Min_throttleVal+10) ThrotVal=parameters.Min_throttleVal;//dead zone at start of throttle travel
  if(gear==DRIVE) {
   if(mg2_speed > 100){ //we're above our min speed to start regen
