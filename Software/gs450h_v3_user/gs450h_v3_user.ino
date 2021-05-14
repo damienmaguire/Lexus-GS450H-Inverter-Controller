@@ -134,8 +134,9 @@ short get_torque()
   //accelerator pedal mapping to torque values here
   ThrotVal = analogRead(Throt1Pin);
   ThrotRange = parameters.Max_throttleVal - parameters.Min_throttleVal; //full range of min-max throttle
-  RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); // regen for first 20% of pedal travel
-  AccelMinRange = RegenRange + (ThrotRange/20); // throttle begins at 25% pedal travel (5% dead zone)
+  //RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); // regen for first 20% of pedal travel
+  RegenRange = parameters.Min_throttleVal + map(abs(mg2_speed), 0, 1000, 0, (ThrotRange / 5)); // regen for first 0-20% of pedal travel, depending on speed
+  AccelMinRange = RegenRange + (ThrotRange/20); // throttle begins at 5-25% pedal travel (5% dead zone) based on MG2 speed derived RegenRange
   MaxRegenTorque = parameters.Max_Drive_Torque / 8; // regen up to 12.5% forward torque (1/8) at min throttle position
   //if (ThrotVal<parameters.Min_throttleVal+10) ThrotVal=parameters.Min_throttleVal;//dead zone at start of throttle travel
  if(gear==DRIVE) {
@@ -149,7 +150,8 @@ short get_torque()
     }
     else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
   }
-  else { //we're below our min regen speed, zero torque for first 30% of pedal
+  else { //we're below our min regen speed, zero torque for first ~5% of pedal
+    if (ThrotVal < AccelMinRange) ThrotVal = AccelMinRange; // if we're in the dead zone, don't request any torque
     ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, parameters.Max_Drive_Torque);
   }
  }
@@ -165,7 +167,8 @@ short get_torque()
     }
     else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
   }
-  else { //we're below our min regen speed, zero torque for first 25% of pedal
+  else {//we're below our min regen speed, zero torque for first ~5% of pedal
+    if (ThrotVal < AccelMinRange) ThrotVal = AccelMinRange; // if we're in the dead zone, don't request any torque
     ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, -parameters.Max_Drive_Torque);
   }
  }
