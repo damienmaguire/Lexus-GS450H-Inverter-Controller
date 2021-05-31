@@ -2,11 +2,11 @@
  * Take an analog throttle signal and converts to a torque command to MG1 and MG2
  * Feedback provided over USB serial
  * V3.01 simple menu system via usb uart added.
- * 
+ *
  * Copyright 2019 T.Darby , D.Maguire
  * openinverter.org
  * evbmw.com
- * 
+ *
  */
 
 
@@ -46,6 +46,10 @@
 #define EEPROM_VERSION      11
 
 
+#define SerialDEBUG SerialUSB
+ template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Allow streaming
+
+
 byte get_gear()
 {
   if(digitalRead(IN1))
@@ -54,27 +58,27 @@ byte get_gear()
   }
   else if(digitalRead(IN2))
   {
-  return(REVERSE); 
+  return(REVERSE);
   }
   else
   {
-  return(NEUTRAL); 
+  return(NEUTRAL);
   }
 }
 
 
-Metro timer_htm=Metro(10); 
+Metro timer_htm=Metro(10);
 
 byte mth_data[100];
 byte htm_data_setup[80]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,25,0,0,0,0,0,0,0,128,0,0,0,128,0,0,0,37,1};
-byte htm_data[80]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0}; 
+byte htm_data[80]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,255,0,0,0,0,0,0,0,0,0};
 
-unsigned short htm_checksum=0, 
-               mth_checksum=0, 
+unsigned short htm_checksum=0,
+               mth_checksum=0,
                since_last_packet=4000;
 
 unsigned long  last_packet=0;
-            
+
 volatile byte mth_byte=0;
 
 float dc_bus_voltage=0,temp_inv_water=0,temp_inv_inductor=0; //just used for diagnostic output
@@ -82,12 +86,13 @@ float dc_bus_voltage=0,temp_inv_water=0,temp_inv_inductor=0; //just used for dia
 short mg1_torque=0,
       mg2_torque=0,
       mg1_speed=-1,
-      mg2_speed=-1;
-       
+      mg2_speed=-1,
+      mg2_speed_temp=-1;
+
 byte inv_status=1,
      gear=get_gear(); //get this from your transmission
-     
-bool htm_sent=0, 
+
+bool htm_sent=0,
      mth_good=0;
 
 int oil_power=120; //oil pump pwm value
@@ -98,9 +103,9 @@ int Throt1Pin = A0; //throttle pedal analog inputs
 int Throt2Pin = A1;
 int ThrotVal=0; //value read from throttle pedal analog input
 int ThrotRange=0; //total range between min throttle and max throttle
-int RegenRange=0; //value within pedal travel where regen starts
-int AccelMinRange=0; //value within pedal travel where acceleration starts
-int MaxRegenTorque=0; //max regen torque at min throttle position
+//int RegenRange=0; //value within pedal travel where regen starts
+//int AccelMinRange=0; //value within pedal travel where acceleration starts
+//int MaxRegenTorque=0; //max regen torque at min throttle position
 
 //double xRegenRPM[5] = {0,100,1000,6000,10000}; //interpolation table, speeds, for regen, rpm, mg2_speed
 //double yRegenTRQ[5] = {0,  0, 100, 100,   60}; //interpolation table, torques, for regen, %
@@ -116,6 +121,35 @@ float mg1_stat=0;
 float mg2_stat=0;
 ////////////////////////////////////////////////////
 
+/////////regen data///////////////
+int16_t pedalmap_drive[11][6] = {     //torque 0-3500 (full scale for MG2)
+{350, 	700, 	1050, 	1575, 	2450, 	3500},
+{175, 	525, 	1050, 	1575, 	2450, 	3500},
+{0, 	350, 	875, 	1575, 	2450, 	3500},
+{-350, 	105, 	765, 	1487, 	2406, 	3500},
+{-525, 	0, 	656, 	1400, 	2362, 	3500},
+{-525, 	-35, 	546, 	1312, 	2318, 	3500},
+{-392, 	-70, 	437, 	1225, 	2275, 	3500},
+{-312, 	-105, 	328, 	1137, 	2231, 	3500},
+{-259, 	-140, 	218, 	1050, 	2187, 	3500},
+{-221, 	-175, 	109, 	962, 	2143, 	3500},
+{-193, 	-140, 	0, 	875, 	2100, 	3500}};
+
+int16_t pedalmap_reverse[5][6] = { //torque 0-3500 (full scale for MG2)
+{700, 	525, 	350, 	175, 	87, 	0},
+{350, 	-350, 	-525, 	-700, 	-875, 	-1050},
+{0, 	-700, 	-1050, 	-1330, 	-1575, 	-1750},
+{-350, 	-700, 	-1050, 	-1330, 	-1575, 	-1750},
+{-700, 	-875, 	-1120, 	-1330, 	-1575, 	-1750}};
+
+int16_t speedrange_drive[11] = //rpm
+{-3500, 	-1750, 	0, 	1750, 	3500, 	5250, 	7000, 	8750, 	10500, 	12250, 	14000};
+
+int16_t speedrange_reverse[5] = //rpm
+{-3500, 	-1750, 	0, 	1750, 	3500};
+
+////////////////////////////////////////////////////
+
 typedef struct
 {
 uint8_t  version; //eeprom version stored
@@ -126,64 +160,71 @@ unsigned int Max_throttleVal=0;
 unsigned int PumpPWM=0;
 bool  selGear=HIGH;
 }ControlParams;
-     
+
 ControlParams parameters;
 
 short get_torque()
 {
-  //accelerator pedal mapping to torque values here
-  ThrotVal = analogRead(Throt1Pin);
-  ThrotRange = parameters.Max_throttleVal - parameters.Min_throttleVal; //full range of min-max throttle
-  //RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); // regen for first 20% of pedal travel
-  if(abs(mg2_speed) < 1000) RegenRange = parameters.Min_throttleVal + map(abs(mg2_speed), 0, 1000, 0, (ThrotRange / 5)); // regen for first 0-20% of pedal travel, depending on speed, if under 1000rpm
-  else RegenRange = parameters.Min_throttleVal + (ThrotRange / 5); //fixed regen, 20% of pedal travel, 1000rpm or above
-  AccelMinRange = RegenRange + (ThrotRange/20); // throttle begins at 5-25% pedal travel (5% dead zone) based on MG2 speed derived RegenRange
-  MaxRegenTorque = parameters.Max_Drive_Torque / 8; // regen up to 12.5% forward torque (1/8) at min throttle position
-  //if (ThrotVal<parameters.Min_throttleVal+10) ThrotVal=parameters.Min_throttleVal;//dead zone at start of throttle travel
- if(gear==DRIVE) {
-  if(mg2_speed > 100){ //we're above our min speed to start regen
-    if(ThrotVal < RegenRange) { //we're asking to regenerate
-      ThrotVal = map(ThrotVal, parameters.Min_throttleVal, RegenRange, -MaxRegenTorque, 0); //map from max regen torque to 0 within regen range
-      if(mg2_speed < 1000) ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
+    ThrotVal = analogRead(Throt1Pin);
+    ThrotRange = parameters.Max_throttleVal - parameters.Min_throttleVal; //full range of min-max throttle
+    int16_t torque = 0, map_x, map_y;
+    uint8_t pedal_index, speed_index;
+    int16_t pedal_range[6] = {parameters.Min_throttleVal, 	parameters.Min_throttleVal+ThrotRange/5, 	parameters.Min_throttleVal+2*ThrotRange/5, 	parameters.Min_throttleVal+3*ThrotRange/5, 	parameters.Min_throttleVal+4*ThrotRange/5, 	parameters.Max_throttleVal};
+    mg2_speed_temp = mg2_speed;
+    if(gear==DRIVE) {
+        if (mg2_speed_temp < speedrange_drive[0]) {
+          mg2_speed_temp = speedrange_drive[0]; // force min speed if speed below expected range
+          //SerialDEBUG.print("Below speed map range");
+        }
+        pedal_index = map(ThrotVal, pedal_range[0], pedal_range[5], 0, 5);
+        speed_index = map(mg2_speed_temp, speedrange_drive[0], speedrange_drive[10], 0, 10);
+        //SerialDEBUG.print("Pedal map - Pedal/Speed "); SerialDEBUG.print(pedal_index); SerialDEBUG.print("/"); SerialDEBUG.println(speed_index);
+
+        if (pedal_index >= 5 && speed_index >= 10) {
+          return (pedalmap_drive[10][5]); // pedal and speed maxed out
+          //SerialDEBUG.println("Pedal map - Pedal & Speed maxed out");
+        }
+        if (pedal_index >= 5) {
+          return (map(mg2_speed_temp, speedrange_drive[speed_index], speedrange_drive[speed_index + 1], pedalmap_drive[speed_index][5], pedalmap_drive[speed_index + 1][5])); // pedal maxed out
+          //SerialDEBUG.println("Pedal map - Pedal maxed out");;
+        }
+        if (speed_index >= 10) {
+          return (map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_drive[10][pedal_index], pedalmap_drive[10][pedal_index + 1])); // speed maxed out
+          //SerialDEBUG.println("Pedal map - Speed maxed out");
+        }
+
+        map_x = map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_drive[speed_index][pedal_index], pedalmap_drive[speed_index][pedal_index + 1]);
+        map_y = map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_drive[speed_index + 1][pedal_index], pedalmap_drive[speed_index + 1][pedal_index + 1]);
+        //SerialDEBUG.print("Pedal map - Interp x/y "); SerialDEBUG.print(map_x); SerialDEBUG.print("/"); SerialDEBUG.println(map_y);
+
+        torque = map(mg2_speed_temp, speedrange_drive[speed_index], speedrange_drive[speed_index + 1], map_x, map_y);
+        //SerialDEBUG.print("Torque "); SerialDEBUG.print(torque), SerialDEBUG.print(", Throttle "); SerialDEBUG.print(ThrotVal), SerialDEBUG.print(", Speed "); SerialDEBUG.println(mg2_speed);
+      }
+
+  if(gear==REVERSE) {
+      if (mg2_speed_temp < speedrange_reverse[0]) mg2_speed_temp = speedrange_reverse[0]; // force min speed if speed below expected range
+      pedal_index = map(ThrotVal, pedal_range[0], pedal_range[5], 0, 5);
+      speed_index = map(mg2_speed_temp, speedrange_reverse[0], speedrange_reverse[4], 0, 4);
+
+      if (pedal_index >= 5 && speed_index >= 4) return (pedalmap_drive[10][4]); // pedal and speed maxed out
+      if (pedal_index >= 5) return (map(mg2_speed_temp, speedrange_reverse[speed_index], speedrange_reverse[speed_index + 1], pedalmap_reverse[speed_index][5], pedalmap_reverse[speed_index + 1][5])); // pedal maxed out
+      if (speed_index >= 4) return (map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_reverse[4][pedal_index], pedalmap_reverse[4][pedal_index + 1])); // speed maxed out
+
+      map_x = map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_reverse[speed_index][pedal_index], pedalmap_reverse[speed_index][pedal_index + 1]);
+      map_y = map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_reverse[speed_index + 1][pedal_index], pedalmap_reverse[speed_index + 1][pedal_index + 1]);
+
+      torque = map(mg2_speed_temp, speedrange_reverse[speed_index], speedrange_reverse[speed_index + 1], map_x, map_y);
     }
-    else if(ThrotVal > AccelMinRange){ //we're asking for forward torque
-      ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, parameters.Max_Drive_Torque); //map from 0 torque to max torque within forward torque range
-    }
-    else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
-  }
-  else { //we're below our min regen speed, zero torque for first ~5% of pedal
-    if (ThrotVal < AccelMinRange) ThrotVal = 0; // if we're in the dead zone, don't request any torque
-    ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, parameters.Max_Drive_Torque);
-  }
- }
- if(gear==REVERSE) {
-  //ThrotVal = map(ThrotVal, parameters.Min_throttleVal, parameters.Max_throttleVal, 0, -parameters.Max_Reverse_Torque);
-  if(mg2_speed < -100){ //we're above our min speed to start regen
-    if(ThrotVal < RegenRange) { //we're asking to regenerate
-      ThrotVal = map(ThrotVal, parameters.Min_throttleVal, RegenRange, MaxRegenTorque, 0); //map from max regen torque to 0 within regen range
-      if(mg2_speed > -1000) ThrotVal = map(mg2_speed, 100, 1000, 0, ThrotVal); //scale how much we want to ramp regen based on mg2 speed (100-1000rpm), now that ThrotVal is converted from pedal to torque
-    }
-    else if(ThrotVal > AccelMinRange){ //we're asking for forward torque
-      ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, -parameters.Max_Drive_Torque); //map from 0 torque to max torque within forward torque range
-    }
-    else ThrotVal = 0; //we're in the pedal dead zone where we request 0 torque
-  }
-  else {//we're below our min regen speed, zero torque for first ~5% of pedal
-    if (ThrotVal < AccelMinRange) ThrotVal = 0; // if we're in the dead zone, don't request any torque
-    ThrotVal = map(ThrotVal, AccelMinRange, parameters.Max_throttleVal, 0, -parameters.Max_Drive_Torque);
-  }
- }
- if(gear==NEUTRAL) ThrotVal = 0;//no torque in neutral
-  return ThrotVal; //return torque
+
+    if(gear==NEUTRAL) torque = 0;//no torque in neutral
+    return torque; //return torque
 }
 
 
 
-#define SerialDEBUG SerialUSB
- template<class T> inline Print &operator <<(Print &obj, T arg) { obj.print(arg); return obj; } //Allow streaming
 
 void setup() {
-  
+
   pinMode(pin_inv_req, OUTPUT);
   digitalWrite(pin_inv_req, 1);
   pinMode(13, OUTPUT);  //led
@@ -191,7 +232,7 @@ void setup() {
   digitalWrite(OilPumpPower,HIGH);  //turn on oil pump 12v power supply.
    analogWrite(OilPumpPWM,125);  //set 50% pwm to oil pump at 1khz for testing
 
-  pinMode(InvPower, OUTPUT);  //Inverter Relay 
+  pinMode(InvPower, OUTPUT);  //Inverter Relay
   pinMode(Out1, OUTPUT);  //GP output one
   pinMode(TransSL1,OUTPUT); //Trans solenoids
   pinMode(TransSL2,OUTPUT); //Trans solenoids
@@ -221,7 +262,7 @@ void setup() {
 
   htm_data[65]=(27500)&0xFF;  // discharge ability of battery
   htm_data[66]=((27500)>>8);
- 
+
   SerialDEBUG.begin(115200);
   Serial2.begin(19200); //setup serial 2 for wifi access
 
@@ -237,12 +278,12 @@ void setup() {
     parameters.PumpPWM=0;
     EEPROM.write(0, parameters);
   }
- 
+
 }
 
 void handle_wifi(){
 /*
- * 
+ *
  * Routine to send data to wifi on serial 2
 The information will be provided over serial to the esp8266 at 19200 baud 8n1 in the form :
 vxxx,ixxx,pxxx,mxxxx,nxxxx,oxxx,rxxx,qxxx* where :
@@ -261,7 +302,7 @@ updates will be every 100ms approx.
 
 v100,i200,p35,m3000,n4000,o20,r100,q50*
 */
-  
+
 //Serial2.print("v100,i200,p35,m3000,n4000,o20,r30,q50*"); //test string
 
 digitalWrite(13,!digitalRead(13));//blink led every time we fire this interrrupt.
@@ -317,7 +358,7 @@ void control_inverter() {
     htm_data[0]=(byte)speedSum;
     htm_data[75]=(mg1_torque*4)&0xFF;
     htm_data[76]=((mg1_torque*4)>>8);
-    
+
     //mg1
     htm_data[5]=(mg1_torque*-1)&0xFF;  //negative is forward
     htm_data[6]=((mg1_torque*-1)>>8);
@@ -336,18 +377,18 @@ void control_inverter() {
     htm_data[78]=htm_checksum&0xFF;
     htm_data[79]=htm_checksum>>8;
   }
-  
+
   since_last_packet=micros()-last_packet;
 
   if(since_last_packet>=4000) //read mth
-  {    
+  {
     htm_sent=0;
     mth_byte=0;
     mth_checksum=0;
-    
+
     for(int i=0;i<100;i++)mth_data[i]=0;
     while(Serial1.available()){mth_data[mth_byte]=Serial1.read();mth_byte++;}
-    
+
     for(int i=0;i<98;i++)mth_checksum+=mth_data[i];
     if(mth_checksum==(mth_data[98]|(mth_data[99]<<8)))mth_good=1;else mth_good=0;
     last_packet=micros();
@@ -355,7 +396,7 @@ void control_inverter() {
   }
 
   since_last_packet=micros()-last_packet;
-  
+
   if(since_last_packet>=10)digitalWrite(pin_inv_req,1);
 
   if(since_last_packet>=1000)
@@ -383,10 +424,10 @@ void diag_mth()
     0,0,0,0,0,0,0,0,0,0,
     1,1,0,0,1,1,0,0,1,1,
     1,1,1,1,1,1,1,1,0,0,};
-    
+
   SerialDEBUG.print("\n");
   SerialDEBUG.println("\t0\t1\t2\t3\t4\t5\t6\t7\t8\t9");
-  SerialDEBUG.println("   ------------------------------------------------------------------------------");  
+  SerialDEBUG.println("   ------------------------------------------------------------------------------");
   for (int j=0;j<10;j++)
   {
     SerialDEBUG.print(j*10);if(j==0)SerialDEBUG.print("0");SerialDEBUG.print(" |\t");
@@ -398,27 +439,27 @@ void diag_mth()
     SerialDEBUG.print("\n");
   }
   SerialDEBUG.print("\n");
-    
+
   SerialDEBUG.print("MTH Valid: ");if(mth_good)SerialDEBUG.print("Yes"); else SerialDEBUG.print("No");SerialDEBUG.print("\tChecksum: ");SerialDEBUG.print(mth_checksum);
   SerialDEBUG.print("\n");
-  
+
   SerialDEBUG.print("DC Bus: ");if(dc_bus_voltage>=0)SerialDEBUG.print(dc_bus_voltage);else SerialDEBUG.print("----");
   SerialDEBUG.print("v\n");
- 
+
   SerialDEBUG.print("MG1 - Speed: ");SerialDEBUG.print(mg1_speed);
   SerialDEBUG.print("rpm\tPosition: ");SerialDEBUG.print(mth_data[12]|mth_data[13]<<8);
   SerialDEBUG.print("\n");
-  
+
   SerialDEBUG.print("MG2 - Speed: ");SerialDEBUG.print(mg2_speed);
   SerialDEBUG.print("rpm\tPosition: ");SerialDEBUG.print(mth_data[37]|mth_data[38]<<8);
   SerialDEBUG.print("\n");
-  
+
   SerialDEBUG.print("Water Temp:\t");SerialDEBUG.print(temp_inv_water);
   SerialDEBUG.print("c\nInductor Temp:\t" );SerialDEBUG.print(temp_inv_inductor);
   SerialDEBUG.print("c\nAnother Temp:\t");SerialDEBUG.print(mth_data[88]|mth_data[89]<<8);
   SerialDEBUG.print("c\nAnother Temp:\t");SerialDEBUG.print(mth_data[41]|mth_data[40]<<8);
   SerialDEBUG.print("c\n");
-  
+
   SerialDEBUG.print("\n");
   SerialDEBUG.print("\n");
   SerialDEBUG.print("\n");
@@ -451,66 +492,66 @@ void printMenu()
    SerialDEBUG<<"  a  - Select LOW gear.\n ";
    SerialDEBUG<<"  s  - Select HIGH gear.\n ";
    SerialDEBUG<<"  z  - Save configuration data to EEPROM memory\n ";
-   
+
    SerialDEBUG<<"**************************************************************\n==============================================================\n\n";
-   
+
 }
 
 void checkforinput()
-{ 
-  //Checks for keyboard input from Native port 
-   if (SerialDEBUG.available()) 
+{
+  //Checks for keyboard input from Native port
+   if (SerialDEBUG.available())
      {
       int inByte = SerialDEBUG.read();
       switch (inByte)
          {
-          case 'z':            
+          case 'z':
           EEPROM.write(0, parameters);
            SerialDEBUG.print("Parameters stored to EEPROM");
             break;
-  
-          case 'f':    
+
+          case 'f':
             Cal_minthrottle();
             break;
-            
-          case 'g':    
+
+          case 'g':
             Cal_maxthrottle();
             break;
 
-        
+
           case 'd':     //Print data received from inverter
              diag_mth();
             break;
-            
+
           case 'D':     //Print out the raw ADC throttle value
                 PrintRawData();
             break;
-          
-          case 'i':     
+
+          case 'i':
               Cal_torque_D();
             break;
-          case 'q':     
+          case 'q':
               Cal_torque_R();
             break;
-          case 'v':     
+          case 'v':
               SetPumpSpeed();
-            break;            
-           
+            break;
+
           case '?':     //Print a menu describing these functions
               printMenu();
             break;
-            
-          case 'a':     
+
+          case 'a':
           parameters.selGear=0;
-      SerialDEBUG.println("LOW Gear Selected");      
-            break; 
-        
-         case 's':     
-          parameters.selGear=1;
-     SerialDEBUG.println("HIGH Gear Selected");           
+      SerialDEBUG.println("LOW Gear Selected");
             break;
-         
-          }    
+
+         case 's':
+          parameters.selGear=1;
+     SerialDEBUG.println("HIGH Gear Selected");
+            break;
+
+          }
       }
 }
 
@@ -534,11 +575,11 @@ void PrintRawData()
   if (get_gear()==3) SerialDEBUG.println("DRIVE");
   SerialDEBUG.print("Selected Gear: ");
   if(parameters.selGear) SerialDEBUG.println("HIGH");
-  if(!parameters.selGear) SerialDEBUG.println("LOW"); 
+  if(!parameters.selGear) SerialDEBUG.println("LOW");
   SerialDEBUG.print("Configured Max Drive Torque: ");
-  SerialDEBUG.println(parameters.Max_Drive_Torque); 
+  SerialDEBUG.println(parameters.Max_Drive_Torque);
   SerialDEBUG.print("Configured Max Reverse Torque: ");
-  SerialDEBUG.println(parameters.Max_Reverse_Torque); 
+  SerialDEBUG.println(parameters.Max_Reverse_Torque);
   SerialDEBUG.print("Configured gearbox oil pump speed: ");
   SerialDEBUG.println(parameters.PumpPWM);
   SerialDEBUG.println("Current valve positions: ");
@@ -572,7 +613,7 @@ void PrintRawData()
   SerialDEBUG.println(mg1_stat);
   SerialDEBUG.print("MG2 Stator temp: ");
   SerialDEBUG.println(mg2_stat);
-  SerialDEBUG.println("***************************************************************************************************");  
+  SerialDEBUG.println("***************************************************************************************************");
 }
 
 ///////////////////Throttle pedal calibration//////////////////////////////////////////////
@@ -594,7 +635,7 @@ void Cal_maxthrottle()
    parameters.Max_throttleVal=(analogRead(Throt1Pin));
    if (parameters.Max_throttleVal>1000) parameters.Max_throttleVal=1000;//limit on max value
    SerialDEBUG.println(parameters.Max_throttleVal);
-   
+
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -609,7 +650,7 @@ void Cal_torque_D()
     parameters.Max_Drive_Torque = SerialDEBUG.parseInt();
   }
   if(parameters.Max_Drive_Torque>3500) parameters.Max_Drive_Torque=3500;//limit max drive torque to within range
-  SerialDEBUG.println(parameters.Max_Drive_Torque); 
+  SerialDEBUG.println(parameters.Max_Drive_Torque);
   }
 
 void Cal_torque_R()
@@ -617,12 +658,12 @@ void Cal_torque_R()
   SerialDEBUG.println("");
    SerialDEBUG.print("Configured reverse torque: ");
      if (SerialDEBUG.available()) {
-    parameters.Max_Reverse_Torque = SerialDEBUG.parseInt();  
+    parameters.Max_Reverse_Torque = SerialDEBUG.parseInt();
   }
   if(parameters.Max_Reverse_Torque>3500) parameters.Max_Reverse_Torque=3500;//limit max reverse torque to within range
-  SerialDEBUG.println(parameters.Max_Reverse_Torque); 
+  SerialDEBUG.println(parameters.Max_Reverse_Torque);
   }
-  
+
 /////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -635,7 +676,7 @@ void SetPumpSpeed()
   if(parameters.PumpPWM>100) parameters.PumpPWM=100; //limit to max 100%
   if(parameters.PumpPWM<0) parameters.PumpPWM=0;//limit to 0
   }
-  SerialDEBUG.println(parameters.PumpPWM); 
+  SerialDEBUG.println(parameters.PumpPWM);
   }
 
 void changeGear()
@@ -656,7 +697,7 @@ digitalWrite(TransSL1,LOW);
 digitalWrite(TransSL2,LOW);
 digitalWrite(TransSP,LOW);
 }
-  
+
 }
 
 }
@@ -666,7 +707,7 @@ void processTemps()
 {
 mg1_stat=readThermistor(analogRead(MG1Temp));
 mg2_stat=readThermistor(analogRead(MG2Temp));
-  
+
 }
 
 
@@ -689,15 +730,15 @@ return temp;
 Metro timer_diag = Metro(1100);
 
 void loop() {
-  
+
   control_inverter();
 
   if(timer_diag.check())
   {
-  changeGear();  
+  changeGear();
   processTemps();
    handle_wifi();
 analogWrite(OilPumpPWM,map(parameters.PumpPWM, 0, 100, 0, 255)); //set oil pump pwm
   }
-    checkforinput(); //Check keyboard for user input 
+    checkforinput(); //Check keyboard for user input
 }
