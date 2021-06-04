@@ -163,20 +163,6 @@ bool  selGear=HIGH;
 
 ControlParams parameters;
 
-/*int16_t pedalmap_drive[11][6] = {     //torque 0-3500 (full scale for MG2)
-{350*parameters.Max_Drive_Torque/3500,   700*parameters.Max_Drive_Torque/3500,  1050*parameters.Max_Drive_Torque/3500,   1575*parameters.Max_Drive_Torque/3500,   2450*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{175*parameters.Max_Drive_Torque/3500,   525*parameters.Max_Drive_Torque/3500,  1050*parameters.Max_Drive_Torque/3500,   1575*parameters.Max_Drive_Torque/3500,   2450*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{0,   350*parameters.Max_Drive_Torque/3500,  875*parameters.Max_Drive_Torque/3500,  1575*parameters.Max_Drive_Torque/3500,   2450*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-350*parameters.Max_Drive_Torque/3500,  105*parameters.Max_Drive_Torque/3500,  765*parameters.Max_Drive_Torque/3500,  1487*parameters.Max_Drive_Torque/3500,   2406*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-525*parameters.Max_Drive_Torque/3500,  0,  656*parameters.Max_Drive_Torque/3500,  1400*parameters.Max_Drive_Torque/3500,   2362*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-525*parameters.Max_Drive_Torque/3500,  -35*parameters.Max_Drive_Torque/3500,  546*parameters.Max_Drive_Torque/3500,  1312*parameters.Max_Drive_Torque/3500,   2318*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-392*parameters.Max_Drive_Torque/3500,  -70*parameters.Max_Drive_Torque/3500,  437*parameters.Max_Drive_Torque/3500,  1225*parameters.Max_Drive_Torque/3500,   2275*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-312*parameters.Max_Drive_Torque/3500,  -105*parameters.Max_Drive_Torque/3500,   328*parameters.Max_Drive_Torque/3500,  1137*parameters.Max_Drive_Torque/3500,   2231*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-259*parameters.Max_Drive_Torque/3500,  -140*parameters.Max_Drive_Torque/3500,   218*parameters.Max_Drive_Torque/3500,  1050*parameters.Max_Drive_Torque/3500,   2187*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-221*parameters.Max_Drive_Torque/3500,  -175*parameters.Max_Drive_Torque/3500,   109*parameters.Max_Drive_Torque/3500,  962*parameters.Max_Drive_Torque/3500,  2143*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque},
-{-193*parameters.Max_Drive_Torque/3500,  -140*parameters.Max_Drive_Torque/3500,   0,  875*parameters.Max_Drive_Torque/3500,  2100*parameters.Max_Drive_Torque/3500,   parameters.Max_Drive_Torque}};
-*/
-
 short get_torque()
 {
     ThrotVal = analogRead(Throt1Pin);
@@ -213,6 +199,8 @@ short get_torque()
 
         torque = map(mg2_speed_temp, speedrange_drive[speed_index], speedrange_drive[speed_index + 1], map_x, map_y);
         //SerialDEBUG.print("Torque "); SerialDEBUG.print(torque), SerialDEBUG.print(", Throttle "); SerialDEBUG.print(ThrotVal), SerialDEBUG.print(", Speed "); SerialDEBUG.println(mg2_speed);
+
+        torque = (long)torque * parameters.Max_Drive_Torque / 3500;
       }
 
   if(gear==REVERSE) {
@@ -228,6 +216,8 @@ short get_torque()
       map_y = map(ThrotVal, pedal_range[pedal_index], pedal_range[pedal_index + 1], pedalmap_reverse[speed_index + 1][pedal_index], pedalmap_reverse[speed_index + 1][pedal_index + 1]);
 
       torque = map(mg2_speed_temp, speedrange_reverse[speed_index], speedrange_reverse[speed_index + 1], map_x, map_y);
+
+      torque = (long)torque * parameters.Max_Reverse_Torque / 3500;
     }
 
     if(gear==NEUTRAL) torque = 0;//no torque in neutral
