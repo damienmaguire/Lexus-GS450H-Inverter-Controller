@@ -217,7 +217,7 @@ short get_torque()
 
       torque = map(mg2_speed_temp, speedrange_reverse[speed_index], speedrange_reverse[speed_index + 1], map_x, map_y);
 
-      torque = (long)torque * parameters.Max_Reverse_Torque / 3500;
+      torque = (long)torque * parameters.Max_Reverse_Torque / 1750;
     }
 
     if(gear==NEUTRAL) torque = 0;//no torque in neutral
