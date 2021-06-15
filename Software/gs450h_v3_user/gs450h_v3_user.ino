@@ -628,7 +628,7 @@ void PrintRawData()
   if (get_gear()==3) SerialDEBUG.println("DRIVE");
   SerialDEBUG.print("Selected Gear: ");
   if(parameters.selGear) SerialDEBUG.println("HIGH");
-  if(!parameters.selGear) SerialDEBUG.println("LOW");
+  if(!parameters.selGear || digitalRead(Low_In)) SerialDEBUG.println("LOW");
   SerialDEBUG.print("Configured Max Drive Torque: ");
   SerialDEBUG.println(parameters.Max_Drive_Torque);
   SerialDEBUG.print("Configured Max Reverse Torque: ");
