@@ -36,6 +36,7 @@
 
 #define IN1   6
 #define IN2   7
+#define Low_In   62
 
 #define TransPB1    40
 #define TransPB2    43
@@ -296,6 +297,7 @@ void setup() {
 
   pinMode(IN1,INPUT); //Input 1
   pinMode(IN2,INPUT); //Input 2
+  pinMode(Low_In,INPUT); //Low gear selection input
 
   pinMode(TransPB1,INPUT); //Trans inputs
   pinMode(TransPB2,INPUT); //Trans inputs
@@ -736,18 +738,24 @@ if (mg2_speed<100 && mg1_speed<100) //only shift at very low rpm (ideally 0 but 
 {
 
   if(parameters.selGear)    //high gear
-{
-digitalWrite(TransSL1,LOW);
-digitalWrite(TransSL2,LOW);
-digitalWrite(TransSP,LOW);    //yes we are leaving them all off for initial proof of this version.
-}
+  {
+    digitalWrite(TransSL1,LOW);
+    digitalWrite(TransSL2,LOW);
+    digitalWrite(TransSP,LOW);    //yes we are leaving them all off for initial proof of this version.
+  }
 
   if(!parameters.selGear)   //low gear
-{
-digitalWrite(TransSL1,HIGH);
-digitalWrite(TransSL2,HIGH);
-digitalWrite(TransSP,LOW);
-}
+  {
+    digitalWrite(TransSL1,HIGH);
+    digitalWrite(TransSL2,HIGH);
+    digitalWrite(TransSP,LOW);
+  }
+  if(digitalRead(Low_In)) //shift to low gear on command at ~0 speed regardless of above setting
+  {
+    digitalWrite(TransSL1,HIGH);
+    digitalWrite(TransSL2,HIGH);
+    digitalWrite(TransSP,LOW);
+  }
 
 }
 
