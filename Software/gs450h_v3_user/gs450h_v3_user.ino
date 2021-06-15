@@ -12,8 +12,11 @@
 
 #include <Metro.h>
 #include "variant.h"
+#include <due_can.h>  //https://github.com/collin80/due_can
 #include <due_wire.h>
+#include <DueTimer.h>  //https://github.com/collin80/DueTimer
 #include <Wire_EEPROM.h>
+#include <ISA.h>  //isa can shunt library
 
 #define MG2MAXSPEED 10000
 #define pin_inv_req 22
@@ -136,7 +139,8 @@ int16_t pedalmap_drive[11][6] = {     //torque 0-3500 (full scale for MG2)
 {-221, 	-175, 	109, 	962, 	2143, 	3500},
 {-193, 	-140, 	0, 	875, 	2100, 	3500}};*/
 
-/////New Test Map - Drive/////
+/////New Test Map - Drive - Low/////
+/*
 int16_t pedalmap_drive[11][6] = {     //torque 0-3500 (full scale for MG2)
 {350,   700,  1050,   1575,   2450,   3500},
 {175,   525,  1050,   1575,   2450,   3500},
@@ -148,7 +152,21 @@ int16_t pedalmap_drive[11][6] = {     //torque 0-3500 (full scale for MG2)
 {-260,  0,  320,  1000,   2100,   3500},
 {-260,  0,  320,  1000,   2100,   3500},
 {-220,  0,  320,  1000,   2100,   3500},
-{-190,  0,  320,  1000,   2100,   3500}};
+{-190,  0,  320,  1000,   2100,   3500}};*/
+
+/////New Test Map - Drive - High/////
+int16_t pedalmap_drive[11][6] = {     //torque 0-3500 (full scale for MG2)
+{350,   700,  1050,   1575,   2450,   3500},
+{175,   525,  1050,   1575,   2450,   3500},
+{0,   350,  875,  1575,   2450,   3500},
+{-390,  0,  656,  1400,   2362,   3500},
+{-390,  0,  656,  1400,   2362,   3500},
+{-360,  -35,  546,  1312,   2318,   3500},
+{-350,  -70,  437,  1225,   2275,   3500},
+{-312,  -105,   328,  1137,   2231,   3500},
+{-259,  -140,   218,  1050,   2187,   3500},
+{-221,  -175,   109,  962,  2143,   3500},
+{-193,  -140,   0,  875,  2100,   3500}};
 
 /*
 int16_t pedalmap_reverse[5][6] = { //torque 0-3500 (full scale for MG2)
@@ -162,9 +180,9 @@ int16_t pedalmap_reverse[5][6] = { //torque 0-3500 (full scale for MG2)
 int16_t pedalmap_reverse[5][6] = { //torque 0-3500 (full scale for MG2)
 {700,   525,  350,  175,  87,   0},
 {350,   70,   -210,   -490,   -770,   -1050},
-{0,   -550,   -850,  -1150,  -1450,  -1750},
-{0,   -550,   -850,  -1150,  -1450,  -1750},
-{0,   -550,   -850,  -1150,  -1450,  -1750}};
+{0,   -700,   -1050,  -1330,  -1575,  -1750},
+{0,   -700,   -1050,  -1330,  -1575,  -1750},
+{0,   -700,   -1050,  -1330,  -1575,  -1750}};
 
 int16_t speedrange_drive[11] = //rpm
 {-3500, 	-1750, 	0, 	1750, 	3500, 	5250, 	7000, 	8750, 	10500, 	12250, 	14000};
@@ -245,14 +263,18 @@ short get_torque()
     }
 
     if(gear==NEUTRAL) torque = 0;//no torque in neutral
+    if(torque < -100) digitalWrite(Out1,HIGH); //Set Out1 as brake light output during regen greater than normal engine coast
+    else digitalWrite(Out1,LOW); //turn off Out1 as brake light when not regenerating
     return torque; //return torque
 }
 
-
-
+ISA Sensor;  //Instantiate ISA Module Sensor object to measure current and voltage 
 
 void setup() {
 
+  Can0.begin(CAN_BPS_500K);  //CAN bus for V2. Use for isa shunt comms etc
+  Sensor.begin(0,500);  //Start ISA object on CAN 0 at 500 kbps
+  
   pinMode(pin_inv_req, OUTPUT);
   digitalWrite(pin_inv_req, 1);
   pinMode(13, OUTPUT);  //led
@@ -337,11 +359,12 @@ digitalWrite(13,!digitalRead(13));//blink led every time we fire this interrrupt
 
 Serial2.print("v");//dc bus voltage
 Serial2.print(dc_bus_voltage);//voltage derived from Lexus inverter
+//Serial2.print(Sensor.Voltage);//voltage derived from ISA shunt
 Serial2.print(",i");//dc current
-//Serial2.print(Sensor.Amperes);//current derived from ISA shunt
+Serial2.print(Sensor.Amperes);//current derived from ISA shunt
 Serial2.print(0);
 Serial2.print(",p");//total motor power
-//Serial2.print(Sensor.KW);//Power value derived from ISA Shunt
+Serial2.print(Sensor.KW);//Power value derived from ISA Shunt
 Serial2.print(0);
 Serial2.print(",m");//mg1 rpm
 Serial2.print(abs(mg1_speed));
@@ -721,8 +744,8 @@ digitalWrite(TransSP,LOW);    //yes we are leaving them all off for initial proo
 
   if(!parameters.selGear)   //low gear
 {
-digitalWrite(TransSL1,LOW);
-digitalWrite(TransSL2,LOW);
+digitalWrite(TransSL1,HIGH);
+digitalWrite(TransSL2,HIGH);
 digitalWrite(TransSP,LOW);
 }
 
