@@ -263,7 +263,7 @@ short get_torque()
     }
 
     if(gear==NEUTRAL) torque = 0;//no torque in neutral
-    if(torque < -100) digitalWrite(Out1,HIGH); //Set Out1 as brake light output during regen greater than normal engine coast
+    if(torque < -100 && gear==DRIVE) digitalWrite(Out1,HIGH); //Set Out1 as brake light output during regen greater than normal engine coast
     else digitalWrite(Out1,LOW); //turn off Out1 as brake light when not regenerating
     return torque; //return torque
 }
