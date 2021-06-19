@@ -737,7 +737,13 @@ void changeGear()
 if (mg2_speed<100 && mg1_speed<100) //only shift at very low rpm (ideally 0 but leave a little play)
 {
 
-  if(parameters.selGear)    //high gear
+  if(digitalRead(Low_In)) //shift to low gear on command at ~0 speed regardless of above setting
+  {
+    digitalWrite(TransSL1,HIGH);
+    digitalWrite(TransSL2,HIGH);
+    digitalWrite(TransSP,LOW);
+  }
+  else if(parameters.selGear)    //high gear
   {
     digitalWrite(TransSL1,LOW);
     digitalWrite(TransSL2,LOW);
@@ -750,12 +756,7 @@ if (mg2_speed<100 && mg1_speed<100) //only shift at very low rpm (ideally 0 but 
     digitalWrite(TransSL2,HIGH);
     digitalWrite(TransSP,LOW);
   }
-  if(digitalRead(Low_In)) //shift to low gear on command at ~0 speed regardless of above setting
-  {
-    digitalWrite(TransSL1,HIGH);
-    digitalWrite(TransSL2,HIGH);
-    digitalWrite(TransSP,LOW);
-  }
+
 
 }
 
